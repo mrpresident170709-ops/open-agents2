@@ -177,6 +177,9 @@ export async function POST(req: Request) {
     preferencesPromise,
   ]);
 
+  const userMessageCount = messages.filter((m) => m.role === "user").length;
+  const isFirstUserMessage = userMessageCount === 1;
+
   const preferences = rawPreferences
     ? sanitizeUserPreferencesForSession(rawPreferences, session, req.url)
     : null;
@@ -244,6 +247,7 @@ export async function POST(req: Request) {
           : {}),
         ...(skills.length > 0 && { skills }),
         customInstructions: assistantFileLinkPrompt,
+        chatContext: { isFirstUserMessage },
       },
       ...(shouldAutoCommitPush &&
         sessionRecord.repoOwner &&

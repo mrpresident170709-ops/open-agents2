@@ -124,6 +124,10 @@ export interface Sandbox {
 
   readFile(path: string, encoding: "utf-8"): Promise<string>;
   writeFile(path: string, content: string, encoding: "utf-8"): Promise<void>;
+  /**
+   * Write raw bytes (images, video, fonts) without UTF-8 text encoding.
+   */
+  writeBinaryFile(path: string, content: Uint8Array): Promise<void>;
   stat(path: string): Promise<SandboxStats>;
   access(path: string): Promise<void>;
   mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;

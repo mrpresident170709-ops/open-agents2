@@ -791,6 +791,15 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
     ]);
   }
 
+  async writeBinaryFile(path: string, content: Uint8Array): Promise<void> {
+    const parentDir = path.substring(0, path.lastIndexOf("/"));
+    if (parentDir) {
+      await this.mkdir(parentDir, { recursive: true });
+    }
+
+    await this.session.writeFiles([{ path, content: Buffer.from(content) }]);
+  }
+
   async stat(path: string): Promise<SandboxStats> {
     // Use stat command to get file info
     // Use tab delimiter to avoid issues with file types containing spaces (e.g., "regular file")

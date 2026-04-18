@@ -686,3 +686,21 @@ describe("VercelSandbox.writeFile", () => {
     expect(base64Call).toBeUndefined();
   });
 });
+
+describe("VercelSandbox.writeBinaryFile", () => {
+  test("delegates to sdk.writeFiles with raw bytes", async () => {
+    const sandbox = await sandboxModule.VercelSandbox.connect("sbx-test", {
+      ports: [3000],
+      remainingTimeout: 0,
+    });
+
+    const bytes = new Uint8Array([0, 1, 2, 255]);
+    await sandbox.writeBinaryFile("/vercel/sandbox/out.bin", bytes);
+
+    expect(writeFilesCalls.length).toBe(1);
+    expect(writeFilesCalls[0]?.[0]?.path).toBe("/vercel/sandbox/out.bin");
+    expect(writeFilesCalls[0]?.[0]?.content.equals(Buffer.from(bytes))).toBe(
+      true,
+    );
+  });
+});

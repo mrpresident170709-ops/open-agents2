@@ -38,7 +38,7 @@ export type {
   TaskToolOutput,
   TaskToolUIPart,
 } from "./tools/task";
-export type { TodoItem, TodoStatus } from "./types";
+export type { AgentChatContext, TodoItem, TodoStatus } from "./types";
 export {
   addLanguageModelUsage,
   collectTaskToolUsage,

@@ -16,11 +16,17 @@ export const todoItemSchema = z.object({
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
 
+export interface AgentChatContext {
+  /** True when the latest request is the first user turn in this chat. */
+  isFirstUserMessage?: boolean;
+}
+
 export interface AgentContext {
   sandbox: AgentSandboxContext;
   skills?: SkillMetadata[];
   model: LanguageModel;
   subagentModel?: LanguageModel;
+  chatContext?: AgentChatContext;
 }
 
 export interface SandboxExecutionContext {

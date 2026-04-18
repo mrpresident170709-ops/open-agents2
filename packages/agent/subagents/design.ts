@@ -4,7 +4,11 @@ import { z } from "zod";
 import { bashTool } from "../tools/bash";
 import { globTool } from "../tools/glob";
 import { grepTool } from "../tools/grep";
+import { mediaTogetherImageTool } from "../tools/media-together-image";
+import { mediaPexelsSearchTool } from "../tools/media-pexels";
+import { mediaSoraVideoTool } from "../tools/media-sora-video";
 import { readFileTool } from "../tools/read";
+import { uiCompetitorReferenceTool } from "../tools/ui-competitor-reference";
 import { editFileTool, writeFileTool } from "../tools/write";
 import type { SandboxExecutionContext } from "../types";
 import {
@@ -73,7 +77,7 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 Remember: You are capable of extraordinary creative work. Don't hold back — show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
 
 ## TOOLS
-You have full access to file operations (read, write, edit, grep, glob) and bash commands. Use them to complete your task.
+You have full access to file operations (read, write, edit, grep, glob), bash, and media/reference tools: competitor snapshot (when configured), Pexels stock search, Together AI image generation, and optional one-shot AI video (never retry that video tool on failure). Use them to complete your task.
 
 ${SUBAGENT_BASH_RULES}`;
 
@@ -98,6 +102,10 @@ export const designSubagent = new ToolLoopAgent({
     grep: grepTool(),
     glob: globTool(),
     bash: bashTool(),
+    ui_competitor_reference: uiCompetitorReferenceTool,
+    media_pexels_search: mediaPexelsSearchTool,
+    media_together_image: mediaTogetherImageTool,
+    media_sora_video: mediaSoraVideoTool,
   },
   stopWhen: stepCountIs(SUBAGENT_STEP_LIMIT),
   callOptionsSchema,

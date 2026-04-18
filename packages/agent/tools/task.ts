@@ -11,6 +11,7 @@ import {
   SUBAGENT_TYPES,
 } from "../subagents/registry";
 import { SUBAGENT_STEP_LIMIT } from "../subagents/constants";
+import type { AgentContext } from "../types";
 import { sumLanguageModelUsage } from "../usage";
 import { getSandboxContext, getSubagentModel } from "./utils";
 
@@ -92,6 +93,8 @@ IMPORTANT:
     const sandboxContext = getSandboxContext(experimental_context, "task");
     const model = getSubagentModel(experimental_context, "task");
     const subagentModelId = typeof model === "string" ? model : model.modelId;
+    const parentContext = experimental_context as AgentContext | undefined;
+    const mcpHub = parentContext?.mcpHub;
 
     const subagent = SUBAGENT_REGISTRY[subagentType].agent;
 
@@ -103,6 +106,7 @@ IMPORTANT:
         instructions,
         sandbox: sandboxContext.sandbox,
         model,
+        mcpHub,
       },
       abortSignal,
     });

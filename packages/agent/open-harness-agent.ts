@@ -16,11 +16,16 @@ import {
   editFileTool,
   globTool,
   grepTool,
+  mediaTogetherImageTool,
+  mediaPexelsSearchTool,
+  mediaSoraVideoTool,
   readFileTool,
   skillTool,
   taskTool,
   todoWriteTool,
+  uiCompetitorReferenceTool,
   webFetchTool,
+  withMcpTools,
   writeFileTool,
 } from "./tools";
 
@@ -44,6 +49,11 @@ const callOptionsSchema = z.object({
   subagentModel: z.custom<OpenHarnessAgentModelInput>().optional(),
   customInstructions: z.string().optional(),
   skills: z.custom<SkillMetadata[]>().optional(),
+  chatContext: z
+    .object({
+      isFirstUserMessage: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export type OpenHarnessAgentCallOptions = z.infer<typeof callOptionsSchema>;
@@ -62,7 +72,7 @@ function normalizeAgentModelSelection(
   return typeof selection === "string" ? { id: selection } : selection;
 }
 
-const tools = {
+const coreTools = {
   todo_write: todoWriteTool,
   read: readFileTool(),
   write: writeFileTool(),
@@ -74,12 +84,16 @@ const tools = {
   ask_user_question: askUserQuestionTool,
   skill: skillTool,
   web_fetch: webFetchTool,
+  ui_competitor_reference: uiCompetitorReferenceTool,
+  media_pexels_search: mediaPexelsSearchTool,
+  media_together_image: mediaTogetherImageTool,
+  media_sora_video: mediaSoraVideoTool,
 } satisfies ToolSet;
 
 export const openHarnessAgent = new ToolLoopAgent({
   model: defaultModel,
   instructions: buildSystemPrompt({}),
-  tools,
+  tools: coreTools,
   stopWhen: stepCountIs(1),
   callOptionsSchema,
   prepareStep: ({ messages, model, steps: _steps }) => {
@@ -114,6 +128,7 @@ export const openHarnessAgent = new ToolLoopAgent({
     const customInstructions = options.customInstructions;
     const sandbox = options.sandbox;
     const skills = options.skills ?? [];
+    const chatContext = options.chatContext;
 
     const instructions = buildSystemPrompt({
       cwd: sandbox.workingDirectory,
@@ -122,13 +137,14 @@ export const openHarnessAgent = new ToolLoopAgent({
       environmentDetails: sandbox.environmentDetails,
       skills,
       modelId: mainSelection.id,
+      chatContext,
     });
 
     return {
       ...settings,
       model: callModel,
       tools: addCacheControl({
-        tools: settings.tools ?? tools,
+        tools: withMcpTools(coreTools),
         model: callModel,
       }),
       instructions,
@@ -137,6 +153,7 @@ export const openHarnessAgent = new ToolLoopAgent({
         skills,
         model: callModel,
         subagentModel,
+        chatContext,
       },
     };
   },

@@ -1,3 +1,4 @@
+import { mcpServersConfigured } from "./mcp/config";
 import { buildSubagentSummaryLines } from "./subagents/registry";
 import type { SkillMetadata } from "./skills/types";
 
@@ -54,7 +55,23 @@ You MUST iterate and keep going until the problem is solved. Do not end your tur
 - **Simple-first**: Prefer minimal local fixes over cross-file architecture changes
 - **Reuse-first**: Search for existing patterns before creating new ones
 - **No surprise edits**: If changes affect >3 files or multiple subsystems, show a plan first
-- **No new dependencies** without explicit user approval
+- **No new dependencies** without explicit user approval — **exception**: for substantial UI/UX work (pages, design systems, marketing surfaces), you MAY add vetted frontend dependencies the user would expect (shadcn/ui, Motion, GSAP, icon packs, etc.) without a separate approval step, staying consistent with the project stack
+
+# World-class UI
+
+When you are building or substantially redesigning interfaces, aim for agency-grade craft: clear art direction, distinctive typography and color, purposeful motion, real photography or illustration (stock or generated), and accessible semantics.
+
+- Invoke the \`skill\` tool for \`ui-excellence-stack\` (and \`frontend-design\` when relevant) before large UI builds — they encode stack choices, MCP-style workflows, and verification habits.
+- **Before \`task\` → \`design\`:** you (the parent agent) must already have loaded \`ui-excellence-stack\` and, for real app UI, \`baseline-ui\` and \`emil-design-eng\` via \`skill\`, then pass concrete art direction and paths in the task instructions. The design subagent does not load skills by default.
+- Use \`task\` with subagent \`design\` for large visual passes; keep integration wiring yourself when tight coupling is needed.
+- **Reference snapshots**: use the competitor/reference capture tool when you need a grounded visual benchmark (category leader or a URL the user implies). If it returns a configuration error, say integrations are not enabled and proceed from the brief only.
+- **Stock media**: use the stock photo/video search tool for credible imagery when appropriate.
+- **Generated stills**: use the Together AI image tool (\`media_together_image\`) for bespoke illustrations or hero art when stock is wrong (requires \`TOGETHER_API_KEY\`; default model \`google/flash-image-2.5\`, override with \`TOGETHER_IMAGE_MODEL\`). Prefer saving into \`public/\` via the tool's save path.
+- **Cursor (IDE)**: \`.cursor/mcp.json\` lists **shadcn**, **reactbits**, **21st-dev-magic**, **motion** (Motion Studio MCP), **iconify**, **icons8** — enable in Cursor Settings → MCP (set **API_KEY** for 21st.dev; optional **TOKEN** for Motion+).
+- **Hosted Open Harness**: when the deployment sets \`OPENHARNESS_MCP_SERVERS\`, you have \`mcp_list\` and \`mcp_invoke\` for the same class of stdio MCP servers (see the in-app MCP section when enabled). Without that env var, use bash (e.g. \`npx shadcn\`) and the native HTTP tools above.
+- **Generated video**: use the AI video tool **at most once** per request; if it skips or errors, do **not** call it again — fall back to Pexels video loops or coded animation (CSS, Motion, GSAP).
+- **Coded motion**: still use Framer Motion, CSS, and GSAP liberally; those are not limited to a single attempt.
+- Never tell the user an external integration succeeded when the tool output shows it is misconfigured or failed.
 
 # Fast Context Understanding
 
@@ -108,6 +125,7 @@ Serialize when there are dependencies:
 ${buildSubagentSummaryLines()}
 - Use when: Large mechanical work that can be clearly specified (migrations, scaffolding)
 - Avoid for: Ambiguous requirements, architectural decisions, small localized fixes
+- **design subagent:** only after you have invoked \`ui-excellence-stack\` (and \`baseline-ui\` / \`emil-design-eng\` for app UI) via \`skill\` in this turn or earlier in the same session, unless the change is trivial styling
 
 ## Gathering User Input
 - \`ask_user_question\` - Ask structured questions to gather user input
@@ -142,6 +160,10 @@ After EVERY code change, validate your work and iterate until clean:
 5. Repeat until all checks pass. Do not move on with failing checks.
 6. If existing failures block verification, state that clearly and scope your claim
 7. Report what you ran and the pass/fail status
+
+## UI / frontend surfaces
+
+When you change **multiple files** under \`apps/web\` (or equivalent app UI roots), or implement a **new page, layout, or design-system pass**, you MUST run the repo’s full check script after edits (for this project: \`bun run ci\` from the root per AGENTS.md). Do not finish claiming the UI is done until that passes or you document why verification was impossible.
 
 Do not skip validation because a change seems small or trivial -- always run available checks.
 
@@ -355,6 +377,7 @@ export interface BuildSystemPromptOptions {
   environmentDetails?: string;
   skills?: SkillMetadata[];
   modelId?: string;
+  chatContext?: { isFirstUserMessage?: boolean };
 }
 
 /**
@@ -452,6 +475,29 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
     if (skillsPrompt) {
       parts.push(skillsPrompt);
     }
+  }
+
+  if (mcpServersConfigured()) {
+    parts.push(`
+# In-app MCP (Open Harness host)
+
+\`OPENHARNESS_MCP_SERVERS\` is set. Use \`mcp_list\` first to discover tool names and schemas, then \`mcp_invoke\` to run them (shadcn registry, Motion examples, 21st.dev, ReactBits, Iconify, Icons8, etc.). This runs MCP on the **Open Harness** server process — separate from Cursor IDE MCP, though you can copy the \`mcpServers\` object from \`.cursor/mcp.json\` into the env JSON (including per-server \`env\` for secrets).
+`);
+  }
+
+  if (options.chatContext?.isFirstUserMessage) {
+    parts.push(`
+# First user message in this chat
+
+If the request is **substantial UI work** (e.g. new site, landing page, dashboard, app shell, major redesign, design system, or phrasing like “build UI”, “clone”, “like Stripe”, “component library”), your **first tool calls** should prioritize:
+
+1. \`skill\` → \`ui-excellence-stack\` (and \`website-clone-and-adapt\` if they cited a competitor or clone; \`frontend-design\` when purely visual).
+2. \`ui_competitor_reference\` with a **product category** or **referenceUrl** — unless the user explicitly forbids external references or the tool reports misconfiguration (then say so once and continue from the brief only).
+
+Only skip (2) when the user gave no market/category hint and no URL to study. After references, synthesize a **better, original** interface — never a trademark clone.
+
+For **apps/web**-scale UI, plan to run \`bun run ci\` before you stop.
+`);
   }
 
   return parts.join("\n");

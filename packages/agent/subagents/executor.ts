@@ -1,10 +1,13 @@
-import type { LanguageModel } from "ai";
+import type { LanguageModel, ToolSet } from "ai";
 import { gateway, stepCountIs, ToolLoopAgent } from "ai";
 import { z } from "zod";
+import { addCacheControl } from "../context-management";
+import type { OpenHarnessMcpHub } from "../mcp/hub";
 import { bashTool } from "../tools/bash";
 import { globTool } from "../tools/glob";
 import { grepTool } from "../tools/grep";
 import { readFileTool } from "../tools/read";
+import { withMcpTools } from "../tools/merge-mcp-tools";
 import { editFileTool, writeFileTool } from "../tools/write";
 import type { SandboxExecutionContext } from "../types";
 import {
@@ -43,7 +46,7 @@ Example final response:
 ${SUBAGENT_VALIDATE_RULES}
 
 ## TOOLS
-You have full access to file operations (read, write, edit, grep, glob) and bash commands. Use them to complete your task.
+You have full access to file operations (read, write, edit, grep, glob) and bash commands. When the host enables MCP (\`OPENHARNESS_MCP_SERVERS\`), you also have \`mcp_list\` / \`mcp_invoke\`. Use them to complete your task.
 
 ${SUBAGENT_BASH_RULES}`;
 
@@ -54,21 +57,27 @@ const callOptionsSchema = z.object({
     .custom<SandboxExecutionContext["sandbox"]>()
     .describe("Sandbox for file system and shell operations"),
   model: z.custom<LanguageModel>().describe("Language model for this subagent"),
+  mcpHub: z
+    .custom<OpenHarnessMcpHub | undefined>()
+    .optional()
+    .describe("Shared MCP hub from parent agent when available"),
 });
 
 export type ExecutorCallOptions = z.infer<typeof callOptionsSchema>;
 
+const executorCoreTools = {
+  read: readFileTool(),
+  write: writeFileTool(),
+  edit: editFileTool(),
+  grep: grepTool(),
+  glob: globTool(),
+  bash: bashTool(),
+} satisfies ToolSet;
+
 export const executorSubagent = new ToolLoopAgent({
   model: gateway("anthropic/claude-haiku-4.5"),
   instructions: EXECUTOR_SYSTEM_PROMPT,
-  tools: {
-    read: readFileTool(),
-    write: writeFileTool(),
-    edit: editFileTool(),
-    grep: grepTool(),
-    glob: globTool(),
-    bash: bashTool(),
-  },
+  tools: executorCoreTools,
   stopWhen: stepCountIs(SUBAGENT_STEP_LIMIT),
   callOptionsSchema,
   prepareCall: ({ options, ...settings }) => {
@@ -92,9 +101,14 @@ ${options.task}
 ${options.instructions}
 
 ${SUBAGENT_REMINDER}`,
+      tools: addCacheControl({
+        tools: withMcpTools(executorCoreTools),
+        model,
+      }),
       experimental_context: {
         sandbox,
         model,
+        mcpHub: options.mcpHub,
       },
     };
   },

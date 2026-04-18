@@ -21,3 +21,5 @@ export { uiCompetitorReferenceTool } from "./ui-competitor-reference";
 export { mediaPexelsSearchTool } from "./media-pexels";
 export { mediaTogetherImageTool } from "./media-together-image";
 export { mediaSoraVideoTool } from "./media-sora-video";
+export { mcpInvokeTool, mcpListTool } from "./mcp";
+export { withMcpTools } from "./merge-mcp-tools";

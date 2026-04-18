@@ -1,6 +1,8 @@
-import type { LanguageModel } from "ai";
+import type { LanguageModel, ToolSet } from "ai";
 import { gateway, stepCountIs, ToolLoopAgent } from "ai";
 import { z } from "zod";
+import { addCacheControl } from "../context-management";
+import type { OpenHarnessMcpHub } from "../mcp/hub";
 import { bashTool } from "../tools/bash";
 import { globTool } from "../tools/glob";
 import { grepTool } from "../tools/grep";
@@ -9,6 +11,7 @@ import { mediaPexelsSearchTool } from "../tools/media-pexels";
 import { mediaSoraVideoTool } from "../tools/media-sora-video";
 import { readFileTool } from "../tools/read";
 import { uiCompetitorReferenceTool } from "../tools/ui-competitor-reference";
+import { withMcpTools } from "../tools/merge-mcp-tools";
 import { editFileTool, writeFileTool } from "../tools/write";
 import type { SandboxExecutionContext } from "../types";
 import {
@@ -77,7 +80,7 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 Remember: You are capable of extraordinary creative work. Don't hold back — show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
 
 ## TOOLS
-You have full access to file operations (read, write, edit, grep, glob), bash, and media/reference tools: competitor snapshot (when configured), Pexels stock search, Together AI image generation, and optional one-shot AI video (never retry that video tool on failure). Use them to complete your task.
+You have full access to file operations (read, write, edit, grep, glob), bash, and media/reference tools: competitor snapshot (when configured), Pexels stock search, Together AI image generation, and optional one-shot AI video (never retry that video tool on failure). When the host enables MCP (\`OPENHARNESS_MCP_SERVERS\`), you also have \`mcp_list\` / \`mcp_invoke\` for the same class of integrations as Cursor (shadcn, Motion, 21st, etc.); call \`mcp_list\` first if tool names are unknown. Use these tools to complete your task.
 
 ${SUBAGENT_BASH_RULES}`;
 
@@ -88,25 +91,31 @@ const callOptionsSchema = z.object({
     .custom<SandboxExecutionContext["sandbox"]>()
     .describe("Sandbox for file system and shell operations"),
   model: z.custom<LanguageModel>().describe("Language model for this subagent"),
+  mcpHub: z
+    .custom<OpenHarnessMcpHub | undefined>()
+    .optional()
+    .describe("Shared MCP hub from parent agent when available"),
 });
 
 export type DesignCallOptions = z.infer<typeof callOptionsSchema>;
 
+const designCoreTools = {
+  read: readFileTool(),
+  write: writeFileTool(),
+  edit: editFileTool(),
+  grep: grepTool(),
+  glob: globTool(),
+  bash: bashTool(),
+  ui_competitor_reference: uiCompetitorReferenceTool,
+  media_pexels_search: mediaPexelsSearchTool,
+  media_together_image: mediaTogetherImageTool,
+  media_sora_video: mediaSoraVideoTool,
+} satisfies ToolSet;
+
 export const designSubagent = new ToolLoopAgent({
   model: gateway("anthropic/claude-opus-4.6"),
   instructions: DESIGN_SYSTEM_PROMPT,
-  tools: {
-    read: readFileTool(),
-    write: writeFileTool(),
-    edit: editFileTool(),
-    grep: grepTool(),
-    glob: globTool(),
-    bash: bashTool(),
-    ui_competitor_reference: uiCompetitorReferenceTool,
-    media_pexels_search: mediaPexelsSearchTool,
-    media_together_image: mediaTogetherImageTool,
-    media_sora_video: mediaSoraVideoTool,
-  },
+  tools: designCoreTools,
   stopWhen: stepCountIs(SUBAGENT_STEP_LIMIT),
   callOptionsSchema,
   prepareCall: ({ options, ...settings }) => {
@@ -130,9 +139,14 @@ ${options.task}
 ${options.instructions}
 
 ${SUBAGENT_REMINDER}`,
+      tools: addCacheControl({
+        tools: withMcpTools(designCoreTools),
+        model,
+      }),
       experimental_context: {
         sandbox,
         model,
+        mcpHub: options.mcpHub,
       },
     };
   },

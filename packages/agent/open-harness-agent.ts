@@ -25,6 +25,7 @@ import {
   todoWriteTool,
   uiCompetitorReferenceTool,
   webFetchTool,
+  withMcpTools,
   writeFileTool,
 } from "./tools";
 
@@ -71,7 +72,7 @@ function normalizeAgentModelSelection(
   return typeof selection === "string" ? { id: selection } : selection;
 }
 
-const tools = {
+const coreTools = {
   todo_write: todoWriteTool,
   read: readFileTool(),
   write: writeFileTool(),
@@ -92,7 +93,7 @@ const tools = {
 export const openHarnessAgent = new ToolLoopAgent({
   model: defaultModel,
   instructions: buildSystemPrompt({}),
-  tools,
+  tools: coreTools,
   stopWhen: stepCountIs(1),
   callOptionsSchema,
   prepareStep: ({ messages, model, steps: _steps }) => {
@@ -143,7 +144,7 @@ export const openHarnessAgent = new ToolLoopAgent({
       ...settings,
       model: callModel,
       tools: addCacheControl({
-        tools: settings.tools ?? tools,
+        tools: withMcpTools(coreTools),
         model: callModel,
       }),
       instructions,

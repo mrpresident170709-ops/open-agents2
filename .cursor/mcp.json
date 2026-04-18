@@ -11,6 +11,21 @@
     "21st-dev-magic": {
       "command": "npx",
       "args": ["-y", "@21st-dev/magic@latest"]
+    },
+    "motion": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "https://api.motion.dev/registry.tgz?package=motion-studio-mcp&version=latest"
+      ]
+    },
+    "iconify": {
+      "command": "npx",
+      "args": ["-y", "iconify-mcp-server@latest"]
+    },
+    "icons8": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.icons8.com/mcp/"]
     }
   }
 }

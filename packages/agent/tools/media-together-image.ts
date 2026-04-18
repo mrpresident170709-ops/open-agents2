@@ -77,7 +77,11 @@ type TogetherImageItem =
  * Image generation via Together AI (Gemini Flash Image, FLUX, etc.).
  */
 export const mediaTogetherImageTool = tool({
-  description: `Generate a raster image from a text prompt using Together AI image models (default: google/flash-image-2.5). Override with TOGETHER_IMAGE_MODEL (e.g. google/gemini-3-pro-image).
+  description: `Generate a raster image via Together AI POST /v1/images/generations.
+
+Models (set TOGETHER_IMAGE_MODEL; confirm current ids on together.ai/models):
+- Default: google/flash-image-2.5 (Flash / fast image class; often marketed alongside "Nano Banana"-style Gemini image on Together).
+- Higher tier example: google/gemini-3-pro-image (Pro image; use when configured on your Together account).
 
 WHEN TO USE:
 - Custom hero art, marketing visuals, or bespoke illustrations when Pexels is not the right fit

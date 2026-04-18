@@ -1,0 +1,20 @@
+/*
+ * TweakCN (https://tweakcn.com) — visual theming for shadcn/ui.
+ *
+ * Export the "CSS variables" (or full theme) from TweakCN and paste your
+ * :root { ... } and .dark { ... } blocks below. This file is imported from
+ * app/globals.css so overrides here apply after the default token set.
+ *
+ * Remove this comment block once you have pasted real tokens, or keep it as a reminder.
+ */
+
+/* Paste TweakCN output below, for example:
+:root {
+  --radius: 0.5rem;
+  --primary: oklch(0.55 0.18 250);
+  --primary-foreground: oklch(0.985 0 0);
+}
+.dark {
+  --background: oklch(0.145 0.01 285);
+}
+*/

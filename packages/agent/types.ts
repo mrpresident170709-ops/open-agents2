@@ -1,6 +1,7 @@
 import type { SandboxState } from "@open-harness/sandbox";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
+import type { OpenHarnessMcpHub } from "./mcp/hub";
 import type { AgentSandboxContext } from "./open-harness-agent";
 import type { SkillMetadata } from "./skills/types";
 
@@ -27,6 +28,8 @@ export interface AgentContext {
   model: LanguageModel;
   subagentModel?: LanguageModel;
   chatContext?: AgentChatContext;
+  /** Lazily populated by mcp_list / mcp_invoke when OPENHARNESS_MCP_SERVERS is set. */
+  mcpHub?: OpenHarnessMcpHub;
 }
 
 export interface SandboxExecutionContext {
